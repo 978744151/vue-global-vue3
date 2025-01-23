@@ -1,0 +1,55 @@
+{
+	// "extends": "@vue/tsconfig/tsconfig.dom.json",
+	"include": [
+		"src/**/*.ts",
+		"src/**/*.tsx",
+		"src/**/**/*.tsx",
+		"src/**/**/**/*.tsx",
+		"src/**/**/**/**/*.tsx",
+		"src/**/**/**/**/**/*.tsx",
+		"src/*.vue",
+		"src/**/*.vue",
+		"src/**/**/*.vue",
+		"src/**/**/**/*.vue",
+		"src/**/**/**/**/*.vue",
+		"src/**/**/**/**/**/*.vue",
+		"src/**/**/**/**/**/**/*.vue",
+		"src/**/*.d.ts",
+		"src/main.js",
+		"src/**/**/*.ts",
+		"src/**/**/*.js",
+		"src/**/**/**/*.js",
+		"auto-imports.d.ts",
+		"plugins/*.ts",
+		"plugins/**/*.ts",
+	],
+	"exclude": [
+		"src/**/__tests__/*"
+	],
+	"compilerOptions": {
+		"moduleResolution": "node",
+		"composite": true,
+		"baseUrl": ".",
+		"paths": {
+			"@/*": [
+				"src/*"
+			]
+		},
+		"types": [
+			"vite/client"
+		],
+		"allowJs": true,
+		"strict": false,
+		"jsx": "preserve",
+		"module": "ESNext",
+		"sourceMap": true,
+		"resolveJsonModule": true,
+		"esModuleInterop": true,
+		"lib": [
+			"esnext",
+			"dom"
+		]
+		// "noUnusedLocals": true,
+		// "noUncheckedIndexedAccess": true
+	}
+}
