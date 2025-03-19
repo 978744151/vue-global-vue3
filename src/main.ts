@@ -1,7 +1,8 @@
 import { createApp } from 'vue'
 
 import ElementPlus from 'element-plus'
-import 'element-plus/dist/index.css'
+import 'element-plus/theme-chalk/src/index.scss' // element-plus css
+import zhCn from 'element-plus/es/locale/lang/zh-cn'
 
 
 
@@ -18,7 +19,7 @@ import SvgIcon from '@/components/SvgIcon/index.vue'
 import elementIcons from '@/components/SvgIcon/svgicon'
 
 
-import router from './router/index.ts'
+import router from './router/index'
 
 
 import App from './App.vue'
@@ -36,8 +37,8 @@ app.use(router)
 // await router.ready()
 
 app.use(pinia)
-  .use(ElementPlus)
-  .use(plugins)
+.use(ElementPlus, { locale: zhCn,namespace:'el' })
+.use(plugins)
   // .use(Avue,axios)
   .use(elementIcons)
   .component('svg-icon', SvgIcon).mount('#app')

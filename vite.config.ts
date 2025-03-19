@@ -19,7 +19,7 @@ export default defineConfig({
   },
   // vite 相关配置
   server: {
-    port: 1888,
+    port: 5177,
     host: true,
     open: true,
     proxy: {
