@@ -1,7 +1,6 @@
 <template>
 
   <el-config-provider namespace="el">
-    <el-button type="primary">122</el-button>
     <RouterView id="router-container" v-slot="{ Component }">
       <keep-alive :include="include">
         <component :is="Component" :key="$route.name" />
