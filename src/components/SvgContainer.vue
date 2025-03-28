@@ -3,7 +3,8 @@
         <div class="svg-container-title">
             gb818全牙
         </div>
-        <svg ref="svgElement" :width="svgSize.width" :height="svgSize.height" @wheel="handleWheel" :style="{
+        <svg ref="svgElement" :width="svgSize.width" :height="svgSize.height" @mousedown="handleSvgMouseDown"
+            @mousemove="handleSvgMouseMove" @mouseup="handleSvgMouseUp" @wheel="handleWheel" :style="{
             transform: `scale(${svgSize.scale}) translate(${svgPan.translateX}px, ${svgPan.translateY}px)`,
             cursor: svgPan.isDragging ? 'grabbing' : 'grab'
         }">>
