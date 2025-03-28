@@ -3,8 +3,7 @@
         <div class="svg-container-title">
             gb818全牙
         </div>
-        <svg ref="svgElement" :width="svgSize.width" :height="svgSize.height" @mousedown="handleSvgMouseDown"
-            @mousemove="handleSvgMouseMove" @mouseup="handleSvgMouseUp" :style="{
+        <svg ref="svgElement" :width="svgSize.width" :height="svgSize.height" @wheel="handleWheel" :style="{
             transform: `scale(${svgSize.scale}) translate(${svgPan.translateX}px, ${svgPan.translateY}px)`,
             cursor: svgPan.isDragging ? 'grabbing' : 'grab'
         }">>
@@ -90,6 +89,28 @@ const editing = reactive({
     text: '',
     position: { x: 0, y: 0 }
 })
+// 添加鼠标滚轮缩放处理方法
+const handleWheel = (event) => {
+    event.preventDefault();
+
+    const delta = event.deltaY;
+    const rect = svgElement.value.getBoundingClientRect();
+
+    // 计算鼠标在SVG中的相对位置
+    const mouseX = (event.clientX - rect.left) / svgSize.scale;
+    const mouseY = (event.clientY - rect.top) / svgSize.scale;
+
+    // 根据滚轮方向确定缩放方向
+    if (delta > 0) {
+        // 向下滚动，缩小
+        svgSize.scale = Math.max(svgSize.scale / 1.1, 0.5);
+    } else {
+        // 向上滚动，放大
+        svgSize.scale = Math.min(svgSize.scale * 1.1, 3);
+    }
+
+    updateSvgTransform();
+}
 
 // 计算编辑框位置
 const editBoxStyle = computed(() => ({
@@ -128,16 +149,16 @@ const handleSvgMouseUp = (event) => {
 }
 
 
-
-
-// 拖拽方法
+// 修改拖拽方法
 const startDrag = (event) => {
     if (!props.canEdit) return
 
     const rect = svgElement.value.getBoundingClientRect()
-    // 考虑缩放因素计算鼠标位置
-    const mouseX = (event.clientX - rect.left) / svgSize.scale - svgPan.translateX
-    const mouseY = (event.clientY - rect.top) / svgSize.scale - svgPan.translateY
+    const scale = svgSize.scale
+
+    // 计算实际的鼠标位置，考虑缩放和平移
+    const mouseX = (event.clientX - rect.left) / scale - svgPan.translateX
+    const mouseY = (event.clientY - rect.top) / scale - svgPan.translateY
 
     textElements.value.forEach((text, index) => {
         const textWidth = getTextWidth(text.content)
@@ -150,18 +171,22 @@ const startDrag = (event) => {
         }
     })
 }
+
 const doDrag = (event) => {
     if (!dragging.isDragging) return
 
     const rect = svgElement.value.getBoundingClientRect()
-    // 考虑缩放因素计算新位置
-    const mouseX = (event.clientX - rect.left) / svgSize.scale - svgPan.translateX
-    const mouseY = (event.clientY - rect.top) / svgSize.scale - svgPan.translateY
+    const scale = svgSize.scale
+
+    // 计算新位置，考虑缩放和平移
+    const mouseX = (event.clientX - rect.left) / scale - svgPan.translateX
+    const mouseY = (event.clientY - rect.top) / scale - svgPan.translateY
 
     textElements.value[dragging.index].x = mouseX - dragging.offsetX
     textElements.value[dragging.index].y = mouseY - dragging.offsetY
     emit('update:textElements', textElements.value)
 }
+
 
 const endDrag = () => {
     dragging.isDragging = false
