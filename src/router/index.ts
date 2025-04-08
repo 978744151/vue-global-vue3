@@ -12,8 +12,8 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('@/views/template/index.vue'),
   },
   {
-    path: '/template/detail',
-    name: 'detail',
+    path: '/template/:id',
+    name: 'template-detail',
     component: () => import('@/views/template/detail.vue'),
   },
   {
@@ -23,9 +23,10 @@ const routes: Array<RouteRecordRaw> = [
   },
   
 ]
+console.log(window.__MICRO_APP_BASE_ROUTE__)
 
 const router = createRouter({
-  history: createWebHistory('/'),
+  history: createWebHistory( '/g-shopCenter'),
   routes
 })
 

@@ -1,30 +1,63 @@
 <template>
     <div class="template-detail">
+        <!-- 顶部导航 -->
         <div class="header">
-            <h2>{{ templateName }}</h2>
+            <div class="breadcrumb">
+                紧固件/螺钉/十字槽机螺钉/GB818十字槽机螺钉/GB818全牙
+            </div>
             <div class="actions">
-                <el-button @click="handleSubmitApproval" type="primary" v-if="canSubmitApproval">提交审批</el-button>
-                <el-button @click="$router.back()">返回</el-button>
+                <el-button @click="handleClose">关闭</el-button>
+                <el-button type="primary">保存</el-button>
+                <el-button type="primary">保存并审核</el-button>
             </div>
         </div>
 
         <div class="main-content">
-            <SvgEditor :imageUrl="templateImage" :initialTextElements="textElements" :canEdit="canEdit"
-                :fileName="templateCode" @update:textElements="textElements = $event" @save="handleSvgSave"
-                ref="svgEditor" />
-        </div>
+            <!-- 图纸展示区 -->
+            <div class="drawing-area">
+                <SvgEditor :templateInfo="templateInfo" :imageUrl="templateImage" :isOnload="true"
+                    :initialTextElements="textElements" :canEdit="canEdit" :fileName="templateCode" :canMove="false"
+                    :isScreen="false" :isShowEdit="false" @update:textElements="textElements = $event"
+                    @save="handleSvgSave" ref="svgEditor">
+                    <template #extra-button>
+                        <el-button size="small" @click="isSettingPanel = !isSettingPanel"
+                            class="common-button">设置</el-button>
+                    </template>
+                </SvgEditor>
 
-        <div class="template-info">
-            <h3>模板信息</h3>
-            <el-descriptions :column="1" border>
-                <el-descriptions-item label="模板编码">{{ templateCode }}</el-descriptions-item>
-                <el-descriptions-item label="状态">
-                    <el-tag :type="statusType">{{ statusText }}</el-tag>
-                </el-descriptions-item>
-                <el-descriptions-item label="创建时间">{{ createTime }}</el-descriptions-item>
-                <el-descriptions-item label="最后修改时间">{{ updateTime }}</el-descriptions-item>
-            </el-descriptions>
+            </div>
+
+            <!-- 右侧属性面板 -->
+            <div class="properties-panel" v-show="isSettingPanel">
+                <el-tabs>
+                    <el-tab-pane label="图纸属性">
+                        <div class="property-group">
+                            <div class="flex justify-between w-full">
+                                <el-button @click="showAttributeDialog" type="primary" link>新增</el-button>
+                                <el-button type="primary" link>导入</el-button>
+                            </div>
+                            <el-table :data="data" style="width: 100%" class="mt-3">
+                                <el-table-column prop="prop" label="商品分类" width="width">
+                                </el-table-column>
+                                <el-table-column prop="prop" label="属性名称" width="width">
+                                </el-table-column>
+                                <el-table-column prop="prop" label="项目代号" width="width">
+                                </el-table-column>
+                            </el-table>
+                        </div>
+                    </el-tab-pane>
+                    <el-tab-pane label="发布版本">
+                        <!-- 发布日志内容 -->
+                    </el-tab-pane>
+                    <el-tab-pane label="操作日志">
+                        <!-- 修改日志内容 -->
+                    </el-tab-pane>
+                </el-tabs>
+            </div>
         </div>
+        <AttributeDialog v-if="attributeDialogVisible" v-model="attributeDialogVisible"
+            @confirm="handleAttributeConfirm" />
+
     </div>
 </template>
 
@@ -32,6 +65,10 @@
 import { ref, reactive, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import SvgEditor from '@/components/SvgContainer.vue'
+import { getCategoryDetail, updateGoodsDrawingTemplate } from "@/api/shop";
+import AttributeDialog from '@/components/AttributeDialog.vue'
+const router = useRouter();
+
 // 模板基本信息
 const templateName = ref('GB818全牙')
 const templateCode = ref('GB818-001')
@@ -39,7 +76,8 @@ const templateImage = ref('http://gpyh-user-oss.gpyh.com/test/img/useravatar/4/d
 const status = ref('reviewing') // reviewing, published
 const createTime = ref('2023-12-20 10:00:00')
 const updateTime = ref('2023-12-20 15:30:00')
-
+const templateInfo = ref({})
+const isSettingPanel = ref(true)
 // 计算属性
 const statusType = computed(() => status.value === 'reviewing' ? 'warning' : 'success')
 const statusText = computed(() => status.value === 'reviewing' ? '审核中' : '已发布')
@@ -48,16 +86,48 @@ const canSubmitApproval = computed(() => status.value !== 'published')
 
 // 文本元素
 const textElements = ref([
-    { x: 50, y: 100, content: 'DK-1-2', color: '#000' },
-    { x: 50, y: 200, content: 'SC-1-2', color: '#000' }
-])
 
+])
+const attributeDialogVisible = ref(false)
+
+const showAttributeDialog = () => {
+    attributeDialogVisible.value = true
+}
+
+const handleAttributeConfirm = (selectedAttributes) => {
+    console.log('选中的属性：', selectedAttributes)
+    // 处理选中的属性
+    updateGoodsDrawingTemplate({
+        templateBo: {
+            ...templateInfo.value,
+            attrNames: selectedAttributes.map(e => {
+                return {
+                    attrName: e.name,
+                    attrNameId: e.id
+                }
+            })
+        }
+    })
+}
 // 计算编辑框位置
 const editBoxStyle = computed(() => ({
     left: `${editing.position.x}px`,
     top: `${editing.position.y - 30}px`
 }))
 
+const handleClose = () => {
+    router.back()
+}
+const getDetail = () => {
+    getCategoryDetail(
+        2705
+    ).then(res => {
+        templateInfo.value = res.data.resultData.templateBo || {}
+    })
+}
+onMounted(() => {
+    getDetail()
+})
 // 拖拽方法
 const startDrag = (event) => {
     if (!canEdit.value) return
@@ -184,83 +254,84 @@ const getTextWidth = (text) => {
     return ctx.measureText(text).width
 }
 </script>
-
 <style scoped>
 .template-detail {
-    padding: 20px;
     height: 100vh;
     display: flex;
     flex-direction: column;
+    background: #f5f7fa;
 }
 
 .header {
+    height: 50px;
+    background: #fff;
+    border-bottom: 1px solid #dcdfe6;
+    padding: 0 20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
+}
+
+.breadcrumb {
+    font-size: 14px;
+    color: #606266;
+}
+
+.actions {
+    display: flex;
+    gap: 10px;
 }
 
 .main-content {
     flex: 1;
     display: flex;
-    gap: 20px;
+    padding: 16px;
+    gap: 16px;
+    min-height: 0;
+}
+
+.drawing-area {
+    flex: 1;
     background: #fff;
     border-radius: 4px;
-    /* padding: 20px; */
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
     overflow: hidden;
 }
 
-.svg-container {
-    flex: 1;
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    border: 1px solid #dcdfe6;
-    border-radius: 4px;
-    overflow: hidden;
-}
-
-svg {
-    flex: 1;
+.properties-panel {
+    width: 401px;
     background: #fff;
-    transform-origin: center center;
-}
-
-.svg-controls {
-    padding: 10px;
-    display: flex;
-    gap: 10px;
-    background: #f5f7fa;
-    border-top: 1px solid #dcdfe6;
-}
-
-.template-info {
-    width: 300px;
-    border-left: 1px solid #dcdfe6;
-    padding-left: 20px;
-}
-
-.edit-box {
+    border-radius: 4px;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
     position: absolute;
-    background: rgba(255, 255, 255, 0.9);
-    padding: 5px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    right: 16px;
+    height: 100%;
+    z-index: 1111;
+    padding-top: 6px;
+}
+
+.property-group {
+    padding: 0 16px;
+}
+
+.property-item {
     display: flex;
-    gap: 5px;
+    margin-bottom: 16px;
 }
 
-.edit-box input {
-    padding: 4px 8px;
-    border: 1px solid #dcdfe6;
-    border-radius: 4px;
+.property-item label {
+    width: 80px;
+    color: #606266;
+    font-size: 14px;
 }
 
-.edit-box button {
-    padding: 4px 8px;
-    background: #409eff;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
+.property-item span {
+    flex: 1;
+    color: #303133;
+    font-size: 14px;
+}
+
+:deep(.el-tabs__header) {
+    margin-bottom: 20px;
 }
 </style>

@@ -1,14 +1,32 @@
 <template>
     <div class="svg-container">
-        <div class="svg-container-title">
-            gb818全牙
+
+        <div class="flex w-full svg-container-header items-center ">
+            <div class=" svg-container-title">
+                gb818全牙
+            </div>
+            <div class="actions ml-3" v-if="isOnload">
+                <!-- <el-button size="small">上传模板</el-button> -->
+                <uploadComponents v-model="templateInfo.templateUrl" />
+
+                <slot name="extra-button"></slot>
+                <el-button size="small">预览图片</el-button>
+
+                <!-- <el-button size="small">放大</el-button>
+                <el-button size="small">缩小</el-button>
+                <el-button size="small">重置</el-button>
+                <el-button size="small">上传模板</el-button> -->
+                <el-button @click="zoomIn" size="small">放大</el-button>
+                <el-button @click="zoomOut" size="small">缩小</el-button>
+                <el-button @click="resetZoom" size="small">重置</el-button>
+            </div>
         </div>
         <svg ref="svgElement" :width="svgSize.width" :height="svgSize.height" @mousedown="handleSvgMouseDown"
             @mousemove="handleSvgMouseMove" @mouseup="handleSvgMouseUp" @wheel="handleWheel" :style="{
-            transform: `scale(${svgSize.scale}) translate(${svgPan.translateX}px, ${svgPan.translateY}px)`,
-            cursor: svgPan.isDragging ? 'grabbing' : 'grab'
-        }">>
-            <image ref="bgImage" :href="imageUrl" width="1000px" height="1000px" object-fit="contain" />
+                transform: `scale(${svgSize.scale}) translate(${svgPan.translateX}px, ${svgPan.translateY}px)`,
+                cursor: svgPan.isDragging ? 'grabbing' : 'grab', margin: '0 auto'
+            }">>
+            <image ref="bgImage" :href="templateInfo.templateInitialUrl" height="100%" object-fit="contain" />
             <text v-for="(text, index) in textElements" :key="index" :x="text.x" :y="text.y" :fill="text.color"
                 font-size="14" font-weight="700" @dblclick="startEdit(index)" style="user-select: none; cursor: move">
                 {{ text.content }}
@@ -20,47 +38,110 @@
             <button @click="saveEdit">保存</button>
         </div>
 
-        <div class="svg-controls">
+        <div class="svg-controls" v-if="!isOnload">
             <el-button @click="zoomIn">放大</el-button>
             <el-button @click="zoomOut">缩小</el-button>
             <el-button @click="resetZoom">重置</el-button>
-            <el-button @click="toggleFullscreen">{{ isFullscreen ? '退出全屏' : '全屏' }}</el-button>
-            <el-button @click="addText" v-if="canEdit">添加文本</el-button>
+            <el-button @click="handleNext" v-if="isShowEdit">编辑</el-button>
+            <el-button @click="toggleFullscreen" v-if="isScreen">{{ isFullscreen ? '退出全屏' : '全屏' }}</el-button>
+            <!-- <el-button @click="addText" v-if="canEdit">添加文本</el-button> -->
             <el-button @click="saveSVG">保存SVG</el-button>
         </div>
+
+        <!-- 添加全屏组件 -->
+        <FullscreenSvg v-model="isFullscreen" :image-url="templateInfo.templateUrl" :text-elements="textElements" />
     </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, defineProps, defineEmits } from 'vue'
-
+import FullscreenSvg from "./FullscreenSvg.vue";
+import uploadComponents from '@/components/upload.vue';
+import { template } from 'lodash';
 const props = defineProps({
     imageUrl: {
         type: String,
         required: true
     },
+    canMove: {
+        type: Boolean,
+        default: true
+    },
+    isScreen: {
+        type: Boolean,
+        default: true
+    },
     initialTextElements: {
         type: Array,
         default: () => []
     },
+    isOnload: {
+        type: Boolean,
+        default: false
+    },
     canEdit: {
+        type: Boolean,
+        default: true
+    },
+    isShowEdit: {
         type: Boolean,
         default: true
     },
     fileName: {
         type: String,
         required: true
+    },
+    templateInfo: {
+        type: Object,
     }
 })
 
 const emit = defineEmits(['update:textElements', 'save'])
 
+const router = useRouter()
 // SVG相关状态
+// 计算 SVG 尺寸的函数
+const calculateSvgSize = () => {
+    // A4 纸张比例 210:297
+    const A4_RATIO = 210 / 297
+    // 获取容器宽度（考虑左侧边栏等布局）
+    const containerWidth = window.innerWidth * 0.7 // 假设容器宽度为窗口的 70%
+    const containerHeight = window.innerHeight - 100 // 减去头部和其他元素的高度
+
+    let width, height
+
+    // 根据容器尺寸计算合适的 SVG 尺寸
+    if (containerWidth / containerHeight > A4_RATIO) {
+        // 如果容器较宽，以高度为基准
+        height = containerHeight
+        width = height * A4_RATIO
+    } else {
+        // 如果容器较高，以宽度为基准
+        width = containerWidth
+        height = width / A4_RATIO
+    }
+
+    // 更新 SVG 尺寸
+    svgSize.width = Math.min(width, 1920 * 0.7) // 限制最大宽度
+    svgSize.height = Math.min(height, 1080 * 0.8) // 限制最大高度
+}
 const svgElement = ref(null)
 const svgSize = reactive({
-    width: 1000,
-    height: 'calc(100vh - 117px)',
+    width: 0,
+    height: 0,
     scale: 1
+})
+const handleNext = () => {
+    router.push(`/template/${props.templateInfo.goodsDrawingCategoryId}`)
+}
+// 监听窗口大小变化
+onMounted(() => {
+    calculateSvgSize()
+    window.addEventListener('resize', calculateSvgSize)
+})
+
+onUnmounted(() => {
+    window.removeEventListener('resize', calculateSvgSize)
 })
 // 添加画布拖动状态
 const svgPan = reactive({
@@ -70,7 +151,6 @@ const svgPan = reactive({
     translateX: 0,
     translateY: 0
 })
-
 const isFullscreen = ref(false)
 
 // 文本元素
@@ -133,12 +213,15 @@ const handleSvgMouseDown = (event) => {
 }
 
 const handleSvgMouseMove = (event) => {
+
     if (dragging.isDragging) {
+
         doDrag(event);
         return;
     }
 
     if (svgPan.isDragging) {
+        if (!props.canMove) return
         svgPan.translateX = event.clientX - svgPan.startX;
         svgPan.translateY = event.clientY - svgPan.startY;
     }
@@ -241,13 +324,6 @@ const updateSvgTransform = () => {
 // 全屏切换
 const toggleFullscreen = () => {
     isFullscreen.value = !isFullscreen.value
-    if (isFullscreen.value) {
-        svgSize.width = window.innerWidth
-        svgSize.height = window.innerHeight
-    } else {
-        svgSize.width = 800
-        svgSize.height = 'calc(100vh - 117px)'
-    }
 }
 
 // 添加文本
@@ -291,10 +367,22 @@ const getTextWidth = (text) => {
     display: flex;
     flex-direction: column;
 
+    &-header {
+        border-bottom: 1px solid #ebeef5;
+        position: relative;
+        z-index: 111;
+
+        .el-button {
+            color: #0065ff;
+            background: #ebf3ff;
+            border: 1px solid #accdff;
+            border-radius: 4px;
+        }
+    }
+
     &-title {
         height: 45px;
         line-height: 45px;
-        border-bottom: 1px solid #dcdfe6;
         padding-left: 20px;
         font-size: 16px;
         font-family: Source Han Sans CN, Source Han Sans CN-Regular;
@@ -317,7 +405,7 @@ svg {
     padding: 10px;
     display: flex;
     gap: 10px;
-    background: #f5f7fa;
+    //background: #f5f7fa;
     border-top: 1px solid #dcdfe6;
     position: fixed;
     bottom: 0;

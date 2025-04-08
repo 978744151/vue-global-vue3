@@ -35,6 +35,9 @@
 </template>
 
 <script setup lang="ts">
+
+defineOptions({ name: "template" });
+
 // 新增分类相关数据
 const categories = ref([
     { id: 2, name: '图2', color: '#409EFF', image: 'http://gpyh-user-oss.gpyh.com/test/img/useravatar/4/d7198af7-0012-435a-a6c2-a3a0683d891c_DIN7971.svg' },
